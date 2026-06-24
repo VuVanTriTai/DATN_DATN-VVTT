@@ -1,0 +1,46 @@
+MyPlans.tsx, PlanDetail.tsx, Documents.tsx, LessonView.tsx, StudentPlanView.tsx bạn hãy tạo với cấu trúc tương tự:
+Vector search trả về 5 chunks
+   ❌ Lỗi tại bài 3: 400 {"error":{"message":"Failed to generate JSON. Ple
+ase adjust your prompt. See 'failed_generation' for more details.","type":"invalid_request_error","code":"json_validate_failed","failed_generation":"max completion tokens reached before generating a valid document"}} 
+
+> Đang RAG bài Ngày 11: Trí Tuệ Nhân Tạo và Kiến trúc RAG trong Viết Báo Cáo - Học tập thích ứng và Cá nhân hóa
+✅ Vector search trả về 3 chunks
+Lỗi AI Lesson: 400 {"error":{"message":"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.","type":"invalid_request_error","code":"json_validate_failed","failed_generation":"max completion tokens reached before generating a valid document"}}
+
+
+
+quiz tạo ra khá vớ vẩn , không giúp ôn lại kiến thức của buổi Học
+lộ trình vẫn có ngày chưa sát tài liệu , ngày cuối ghi đề mục là tổng hợp kiến thưc và ứng dụng nhưng nội dung chỉ nêu lên :Ngày hôm nay, chúng ta sẽ tổng hợp kiến thức và ứng dụng trong các tình huống thực tế. Chúng ta sẽ bắt đầu bằng việc tổng hợp kiến thức về phương pháp Lặp lại ngắt quãng (Spaced Repetition) và cách sử dụng AI hỗ trợ viết báo cáo. Sau đó, chúng ta sẽ chuyển sang chủ đề Đạo đức AI và Bảo mật dữ liệu, bao gồm quyền riêng tư của người học và trách nhiệm của người sử dụng. Cuối cùng, chúng ta sẽ tổng kết lại kiến thức và ứng dụng trong các tình huống thực tế.Server is running at: http://localhost:5000
+[extractText] Downloading: https://res.cloudinary.com/dlkfg3g24/raw/upload/v1775448333/ai_learning_documents/1775448214442-T%C3%83%C2%80I%20LI%C3%A1%C2%BB%C2%86U%20NGHI%C3%83%C2%8AN%20C%C3%A1%C2%BB%C2%A8U.docx
+[extractText] Processing DOCX...
+[extractText] DOCX convertToHtml (transform) failed: Cannot read properties of undefined (reading 'map')
+[extractText] Success: TÃI LIá»U NGHIÃN Cá»¨U.docx → 4011 words, 4 table rows, complexit
+y=medium
+🚀 BẮT ĐẦU QUY TRÌNH TẠO LỘ TRÌNH RAG
+📦 Đang chunk & embedding document với table support...
+[chunkText] Created 16 chunks from 1106 lines
+Da luu 16 chunks voi Vector 1024-dim.
+⏳ Đang đợi Index cập nhật (5s)...
+📚 Bắt đầu tạo chi tiết cho 7 bài học...
+   > Đang RAG bài Ngày 1: Làm việc với các kiểu dữ liệu
+📊 Kiểm tra DB: Plan 69d330c0185747ca9b6bef19 có 16 chunks.
+✅ Tìm thấy 10 đoạn văn bản liên quan.
+   > Đang RAG bài Ngày 2: Chuyển đổi dữ liệu
+📊 Kiểm tra DB: Plan 69d330c0185747ca9b6bef19 có 16 chunks.
+✅ Tìm thấy 10 đoạn văn bản liên quan.
+   > Đang RAG bài Ngày 3: Làm việc với kiểu dữ liệu chuỗi
+📊 Kiểm tra DB: Plan 69d330c0185747ca9b6bef19 có 16 chunks.
+✅ Tìm thấy 10 đoạn văn bản liên quan.
+   > Đang RAG bài Ngày 4: Phân tách kí tự
+📊 Kiểm tra DB: Plan 69d330c0185747ca9b6bef19 có 16 chunks.
+✅ Tìm thấy 10 đoạn văn bản liên quan.
+   > Đang RAG bài Ngày 5: Hàm xử lý dữ liệu ngày/giờ
+📊 Kiểm tra DB: Plan 69d330c0185747ca9b6bef19 có 16 chunks.
+✅ Tìm thấy 10 đoạn văn bản liên quan.
+   > Đang RAG bài Ngày 6: Sắp thứ tự
+📊 Kiểm tra DB: Plan 69d330c0185747ca9b6bef19 có 16 chunks.
+✅ Tìm thấy 10 đoạn văn bản liên quan.
+   > Đang RAG bài Ngày 7: Giải quyết vấn đề thường xảy ra với dữ liệu chuỗi
+📊 Kiểm tra DB: Plan 69d330c0185747ca9b6bef19 có 16 chunks.
+✅ Tìm thấy 10 đoạn văn bản liên quan.
+✅ TẤT CẢ ĐÃ HOÀN TẤT

@@ -1,0 +1,401 @@
+// utils/topicClassifier.js
+"use strict";
+
+/**
+ * Topic Classifier for academic and technical document chunks.
+ *
+ * Classifies each chunk into ONE of the canonical topics (SQL, Math, Science, Business, IT, etc.)
+ * so that RAG retrieval can be filtered by topic instead of pulling
+ * in unrelated content.
+ */
+
+// ─────────────────────────────────────────────
+// RULE DEFINITIONS (order = priority)
+// ─────────────────────────────────────────────
+
+const TOPIC_RULES = [
+  // ── Math & Statistics ─────────────────────
+  {
+    topic: "math_statistics",
+    patterns: [
+      /\b(đạo\s+hàm|tích\s+phân|giới\s+hạn|xác\s+suất|thống\s+kê|phương\s+sai|độ\s+lệch\s+chuẩn|hồi\s+quy|phương\s+trình|ma\s+trận|đại\s+số|hình\s+học|nhân\s+tử|tích\s+lũy)\b/i,
+      /\b(derivative|integral|probability|statistics|variance|standard\s+deviation|regression|equation|matrix|algebra|geometry|calculus|hypothesis\s+testing|anova|t-test)\b/i,
+      /[+\-*/=<>≤≥≈∑∏√∫]/, // ký hiệu toán học phổ biến kết hợp với các từ ngữ khác
+    ],
+  },
+
+  // ── Natural Sciences (Physics, Chemistry, Biology, Medicine) ─────────────
+  {
+    topic: "natural_science",
+    patterns: [
+      /\b(quang\s+hợp|tế\s+bào|gen|di\s+truyền|phân\s+bào|DNA|RNA|axit|bazơ|hóa\s+trị|phản\s+ứng|nguyên\s+tử|phân\s+tử|lực\s+hấp\s+dẫn|năng\s+lượng|vận\s+tốc|gia\s+tốc|điện\s+từ|quang\s+học|nhiệt\s+động)\b/i,
+      /\b(photosynthesis|cell|gene|genetic|mitosis|meiosis|molecule|atom|gravitation|velocity|acceleration|electromagnetic|optics|thermodynamics|acid|base|chemical\s+reaction|biology|physics|chemistry)\b/i,
+    ],
+  },
+
+  // ── Social Sciences & Humanities (History, Geography, Philosophy) ─────────────
+  {
+    topic: "social_science",
+    patterns: [
+      /\b(lịch\s+sử|triều\s+đại|cách\s+mạng|chiến\s+tranh|khảo\s+cổ|địa\s+lý|kinh\s+độ|vĩ\s+độ|khí\s+hậu|địa\s+hình|triết\s+học|nhân\s+học|xã\s+hội|ngôn\s+ngữ|văn\s+hóa|pháp\s+luật|chính\s+trị)\b/i,
+      /\b(history|dynasty|revolution|war|archaeology|geography|latitude|longitude|climate|topography|philosophy|anthropology|sociology|linguistics|culture|politics|constitution)\b/i,
+    ],
+  },
+
+  // ── Economics & Business ─────────────────────
+  {
+    topic: "economics_business",
+    patterns: [
+      /\b(cung\s+cầu|lạm\s+phát|tài\s+chính|đầu\s+tư|doanh\s+nghiệp|thị\s+trường|cổ\s+phiếu|trái\s+phiếu|lợi\s+nhuận|doanh\s+thu|chi\s+phí|ngân\s+hàng|tiêu\s+dùng|sản\s+xuất|quản\s+trị|chiến\s+lược|quảng\s+cáo)\b/i,
+      /\b(supply\s+and\s+demand|inflation|finance|investment|enterprise|market|stock|bond|profit|revenue|cost|banking|consumption|production|management|strategy|marketing|advertising|gdp|inflation)\b/i,
+    ],
+  },
+
+  // ── Stored Procedure (SQL) ─────────────────────
+  {
+    topic: "stored_procedure",
+    patterns: [
+      /\bCREATE\s+(OR\s+REPLACE\s+)?PROC(EDURE)?\b/i,
+      /\bEXEC(UTE)?\s+\w+/i,
+      /\bSP_\w+/i,
+      /\bPROC(EDURE)?\s+\w+/i,
+      /\b@\w+\s+AS\s+\w+/i,
+    ],
+  },
+
+  // ── Trigger (SQL) ──────────────────────────────
+  {
+    topic: "trigger",
+    patterns: [
+      /\bCREATE\s+(OR\s+REPLACE\s+)?TRIGGER\b/i,
+      /\bAFTER\s+(INSERT|UPDATE|DELETE)\b/i,
+      /\bINSTEAD\s+OF\b/i,
+      /\bFOR\s+(INSERT|UPDATE|DELETE)\b/i,
+    ],
+  },
+
+  // ── Control Flow (Programming / General) ─────────────────────────
+  {
+    topic: "control_flow",
+    patterns: [
+      /\bIF\s+EXISTS\b/i,
+      /\bIF\s*\(/i,
+      /\bELSE\s+(IF|BEGIN)\b/i,
+      /\bWHILE\s*\(/i,
+      /\bBEGIN\s*\n/i,
+      /\bCASE\s+WHEN\b/i,
+      /\bBREAK\b|\bCONTINUE\b|\bGOTO\b|\bRETURN\b/i,
+    ],
+  },
+
+  // ── Temp Table / Table Variable (SQL) ──────────
+  {
+    topic: "temp_table",
+    patterns: [
+      /\bCREATE\s+TABLE\s+#\w+/i,
+      /\bINTO\s+#\w+/i,
+      /\b##\w+/,
+      /\bDECLARE\s+@\w+\s+TABLE\b/i,
+      /\bSELECT\s+.*\s+INTO\s+#/i,
+    ],
+  },
+
+  // ── Transaction (SQL) ──────────────────────────
+  {
+    topic: "transaction",
+    patterns: [
+      /\bBEGIN\s+TRAN(SACTION)?\b/i,
+      /\bCOMMIT\s+(TRAN(SACTION)?)?\b/i,
+      /\bROLLBACK\s+(TRAN(SACTION)?)?\b/i,
+      /\bSAVEPOINT\b/i,
+      /\b@@TRANCOUNT\b/i,
+    ],
+  },
+
+  // ── Error Handling (SQL / General) ───────────────────────
+  {
+    topic: "error_handling",
+    patterns: [
+      /\bBEGIN\s+TRY\b/i,
+      /\bBEGIN\s+CATCH\b/i,
+      /\bTHROW\b|\bRAISERROR\b/i,
+      /\b@@ERROR\b/i,
+      /\bERROR_MESSAGE\s*\(\)/i,
+    ],
+  },
+
+  // ── Cursor (SQL) ───────────────────────────────
+  {
+    topic: "cursor",
+    patterns: [
+      /\bDECLARE\s+\w+\s+CURSOR\b/i,
+      /\bOPEN\s+\w+\b/i,
+      /\bFETCH\s+(NEXT|PRIOR|FIRST|LAST)\b/i,
+      /\bCLOSE\s+\w+\b/i,
+      /\bDEALLOCATE\b/i,
+    ],
+  },
+
+  // ── Window Function (SQL) ──────────────────────
+  {
+    topic: "window_function",
+    patterns: [
+      /\bROW_NUMBER\s*\(\)/i,
+      /\bRANK\s*\(\)/i,
+      /\bDENSE_RANK\s*\(\)/i,
+      /\bNTILE\s*\(/i,
+      /\bLEAD\s*\(|\bLAG\s*\(/i,
+      /\bFIRST_VALUE\s*\(|\bLAST_VALUE\s*\(/i,
+      /\bOVER\s*\(\s*PARTITION\b/i,
+    ],
+  },
+
+  // ── Date Function (SQL) ────────────────────────
+  {
+    topic: "date_function",
+    patterns: [
+      /\bDATEADD\s*\(/i,
+      /\bDATEDIFF\s*\(/i,
+      /\bGETDATE\s*\(\)/i,
+      /\bSYSDATETIME\s*\(\)/i,
+      /\bCURRENT_TIMESTAMP\b/i,
+      /\bFORMAT\s*\(.*date/i,
+      /\bYEAR\s*\(|\bMONTH\s*\(|\bDAY\s*\(/i,
+      /\bEOMonth\s*\(/i,
+      /\bDATEFROMPARTS\s*\(/i,
+      /\bhàm\s+ngày\b|\bhàm\s+thời\s+gian\b/i,
+      /\bxử\s+lý\s+ngày\b|\bdữ\s+liệu\s+ngày\b/i,
+    ],
+  },
+
+  // ── String Function (SQL) ──────────────────────
+  {
+    topic: "string_function",
+    patterns: [
+      /\bLEN\s*\(|\bLENGTH\s*\(/i,
+      /\bSUBSTRING\s*\(/i,
+      /\bCHARINDEX\s*\(|\bPATINDEX\s*\(/i,
+      /\bREPLACE\s*\(/i,
+      /\bSTUFF\s*\(/i,
+      /\bUPPER\s*\(|\bLOWER\s*\(/i,
+      /\bLTRIM\s*\(|\bRTRIM\s*\(|\bTRIM\s*\(/i,
+      /\bCONCAT\s*\(|\bCONCAT_WS\s*\(/i,
+      /\bSTRING_AGG\s*\(|\bSTRING_SPLIT\s*\(/i,
+      /\bhàm\s+chuỗi\b/i,
+    ],
+  },
+
+  // ── Math / Numeric Function (SQL) ───────────────
+  {
+    topic: "math_function",
+    patterns: [
+      /\bABS\s*\(/i,
+      /\bROUND\s*\(/i,
+      /\bCEILING\s*\(|\bFLOOR\s*\(/i,
+      /\bPOWER\s*\(|\bSQRT\s*\(/i,
+      /\bMODULO\b|%\s*\d+/,
+      /\bhàm\s+số\b|\bhàm\s+toán\b/i,
+    ],
+  },
+
+  // ── Aggregate Function (SQL) ───────────────────
+  {
+    topic: "aggregate_function",
+    patterns: [
+      /\bSUM\s*\(|\bAVG\s*\(|\bCOUNT\s*\(/i,
+      /\bMIN\s*\(|\bMAX\s*\(/i,
+      /\bGROUP\s+BY\b/i,
+      /\bHAVING\b/i,
+      /\bDISTINCT\b/i,
+    ],
+  },
+
+  // ── Conversion Function (SQL) ──────────────────
+  {
+    topic: "conversion_function",
+    patterns: [
+      /\bCAST\s*\(/i,
+      /\bCONVERT\s*\(/i,
+      /\bTRY_CAST\s*\(|\bTRY_CONVERT\s*\(/i,
+      /\bPARSE\s*\(|\bTRY_PARSE\s*\(/i,
+    ],
+  },
+
+  // ── JOIN (SQL) ────────────────────────────────
+  {
+    topic: "join",
+    patterns: [
+      /\bINNER\s+JOIN\b/i,
+      /\bLEFT\s+(OUTER\s+)?JOIN\b/i,
+      /\bRIGHT\s+(OUTER\s+)?JOIN\b/i,
+      /\bFULL\s+(OUTER\s+)?JOIN\b/i,
+      /\bCROSS\s+JOIN\b/i,
+    ],
+  },
+
+  // ── Subquery / CTE (SQL) ───────────────────────
+  {
+    topic: "subquery",
+    patterns: [
+      /\bWITH\s+\w+\s+AS\s*\(/i,
+      /\bEXISTS\s*\(/i,
+      /\bNOT\s+EXISTS\s*\(/i,
+      /\bIN\s*\(\s*SELECT\b/i,
+      /\bsubquery\b/i,
+    ],
+  },
+
+  // ── Index (SQL) ────────────────────────────────
+  {
+    topic: "index",
+    patterns: [
+      /\bCREATE\s+(UNIQUE\s+)?(CLUSTERED\s+|NONCLUSTERED\s+)?INDEX\b/i,
+      /\bINCLUDE\s*\(/i,
+      /\bCLUSTERED\b|\bNONCLUSTERED\b/i,
+    ],
+  },
+
+  // ── View (SQL) ─────────────────────────────────
+  {
+    topic: "view",
+    patterns: [
+      /\bCREATE\s+(OR\s+REPLACE\s+)?VIEW\b/i,
+      /\bALTER\s+VIEW\b/i,
+    ],
+  },
+
+  // ── DDL (SQL) ──────────────────────────────────
+  {
+    topic: "ddl",
+    patterns: [
+      /\bCREATE\s+TABLE\b/i,
+      /\bALTER\s+TABLE\b/i,
+      /\bDROP\s+TABLE\b/i,
+      /\bTRUNCATE\s+TABLE\b/i,
+    ],
+  },
+
+  // ── DML (SQL) ──────────────────────────────────
+  {
+    topic: "dml",
+    patterns: [
+      /\bINSERT\s+(INTO\s+)?\w+/i,
+      /\bUPDATE\s+\w+\s+SET\b/i,
+      /\bDELETE\s+(FROM\s+)?\w+/i,
+      /\bMERGE\s+\w+/i,
+    ],
+  },
+
+  // ── Engineering & General IT ───────────────────
+  {
+    topic: "engineering_it",
+    patterns: [
+      /\b(thuật\s+toán|lập\s+trình|mạng\s+máy\s+tính|bảo\s+mật|mã\s+hóa|phần\s+cứng|phần\s+mềm|hệ\s+điều\s+hành|giao\s+thức|cơ\s+sở\s+dữ\s+liệu|đệ\s+quy|thuật\s+toán|độ\s+phức\s+tạp|cấu\s+trúc\s+dữ\s+liệu)\b/i,
+      /\b(programming|algorithm|networking|security|cryptography|operating\s+system|protocol|software|hardware|database|recursion|complexity|data\s+structure|api|http|ip\s+address)\b/i,
+    ],
+  },
+];
+
+// ─────────────────────────────────────────────
+// SCORE-BASED CLASSIFIER
+// ─────────────────────────────────────────────
+
+/**
+ * Classify a chunk's content into a single topic.
+ *
+ * Strategy: tally match counts per topic, return the winner.
+ * Falls back to "general" when no rule fires.
+ *
+ * @param {string} content - chunk text
+ * @param {string} [section] - section heading (optional, also scanned)
+ * @returns {string} topic slug
+ */
+const classifyTopic = (content = "", section = "") => {
+  const combined = `${section}\n${content}`;
+
+  const scores = {};
+
+  for (const rule of TOPIC_RULES) {
+    let count = 0;
+    for (const pat of rule.patterns) {
+      const matches = combined.match(new RegExp(pat.source, pat.flags + "g"));
+      if (matches) count += matches.length;
+    }
+    if (count > 0) scores[rule.topic] = (scores[rule.topic] || 0) + count;
+  }
+
+  if (Object.keys(scores).length === 0) return "general";
+
+  // Return topic with highest score
+  return Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+};
+
+/**
+ * Classify an array of chunks (from chunkText / aiChunkText).
+ * Mutates each chunk in-place, adds `chunk.topic`.
+ *
+ * @param {Array<{content:string, section:string}>} chunks
+ * @returns {Array} same array with `.topic` set
+ */
+const classifyChunks = (chunks = []) => {
+  const topicCounts = {};
+
+  for (const chunk of chunks) {
+    chunk.topic = classifyTopic(chunk.content, chunk.section);
+    topicCounts[chunk.topic] = (topicCounts[chunk.topic] || 0) + 1;
+  }
+
+  console.log("[TopicClassifier] Distribution:", topicCounts);
+  return chunks;
+};
+
+/**
+ * Given a plain-text question, infer which topics are relevant.
+ * Used by RAG to filter chunks at retrieval time.
+ *
+ * @param {string} question
+ * @returns {string[]} array of topic slugs (empty = no filter, search all)
+ */
+const inferTopicsFromQuestion = (question = "") => {
+  const matched = [];
+
+  for (const rule of TOPIC_RULES) {
+    for (const pat of rule.patterns) {
+      if (pat.test(question)) {
+        if (!matched.includes(rule.topic)) matched.push(rule.topic);
+        break; // one match per rule is enough
+      }
+    }
+  }
+
+  // Vietnamese keywords for common intents
+  const q = question.toLowerCase();
+
+  if (!matched.length) {
+    // Broad-keyword heuristics (Vietnamese)
+    if (/toán|thống kê|phương trình|tích phân|đạo hàm|anova|xác suất|math|statistics|equation/.test(q)) matched.push("math_statistics");
+    if (/sinh vật|quang hợp|tế bào|gen|DNA|vật lý|hóa học|phản ứng|lực hấp dẫn|science|physics|biology|chemistry/.test(q)) matched.push("natural_science");
+    if (/lịch sử|triều đại|cách mạng|địa lý|triết học|văn hóa|pháp luật|history|geography|philosophy/.test(q)) matched.push("social_science");
+    if (/kinh tế|doanh nghiệp|lợi nhuận|tài chính|đầu tư|cung cầu|lạm phát|finance|business|market/.test(q)) matched.push("economics_business");
+    if (/thuật toán|lập trình|mạng|bảo mật|phần mềm|cơ sở dữ liệu|programming|algorithm|software/.test(q)) matched.push("engineering_it");
+    
+    // Fallbacks for SQL
+    if (/ngày|tháng|năm|thời gian|date|time/.test(q)) matched.push("date_function");
+    if (/chuỗi|ký tự|string|văn bản|text/.test(q)) matched.push("string_function");
+    if (/thủ tục|stored proc|procedure|exec/.test(q)) matched.push("stored_procedure");
+    if (/bảng tạm|temp table|biến bảng|table variable/.test(q)) matched.push("temp_table");
+    if (/điều kiện|if else|vòng lặp|while|control/.test(q)) matched.push("control_flow");
+    if (/tổng hợp|tổng|đếm|trung bình|group by/.test(q)) matched.push("aggregate_function");
+    if (/chuyển đổi|cast|convert/.test(q)) matched.push("conversion_function");
+    if (/kết hợp bảng|join|kết nối/.test(q)) matched.push("join");
+    if (/cửa sổ|window|rank|row_number|over/.test(q)) matched.push("window_function");
+    if (/trigger|kích hoạt/.test(q)) matched.push("trigger");
+    if (/giao dịch|transaction|commit|rollback/.test(q)) matched.push("transaction");
+    if (/xử lý lỗi|try catch|error/.test(q)) matched.push("error_handling");
+    if (/con trỏ|cursor/.test(q)) matched.push("cursor");
+  }
+
+  return matched; // empty array → caller should NOT filter (broad question)
+};
+
+module.exports = { classifyTopic, classifyChunks, inferTopicsFromQuestion };

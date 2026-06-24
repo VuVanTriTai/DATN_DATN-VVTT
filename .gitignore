@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment variables (chứa API keys, secrets - KHÔNG đẩy lên)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build output
+dist/
+build/
+.next/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large video files (quá lớn cho git thông thường)
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Upload thư mục (file upload người dùng)
+DATN----Backend-main/uploads/
