@@ -11,7 +11,7 @@ import CourseActionMenu from '../../components/shared/CourseActionMenu';
 
 // ── Skeleton Card ────────────────────────────────────────────────────────────
 const SkeletonCard = () => (
-  <div className="bg-[#161b27] rounded-[2rem] border border-white/5 p-6 animate-pulse space-y-4">
+  <div className="bg-[#161b27] rounded-[2rem] border border-white/10 p-6 animate-pulse space-y-4">
     <div className="flex justify-between">
       <div className="w-8 h-8 bg-white/5 rounded-xl" />
       <div className="w-16 h-5 bg-white/5 rounded-lg" />
@@ -184,7 +184,7 @@ const Dashboard = () => {
           filteredPlans.map((plan) => (
             <div
               key={plan._id}
-              className="bg-[#0d1117] border border-white/5 hover:border-blue-500/30 rounded-[2rem] p-6 transition-all group relative shadow-xl flex flex-col justify-between hover:-translate-y-0.5 duration-200"
+              className="bg-[#161b27] border border-white/10 hover:border-blue-500/50 rounded-[2rem] p-6 transition-all group relative shadow-2xl flex flex-col justify-between hover:-translate-y-1.5 duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5),0_0_20px_rgba(59,130,246,0.05)]"
             >
               {/* Top row */}
               <div className="flex justify-between items-start mb-5 relative z-20">

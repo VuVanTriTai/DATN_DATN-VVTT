@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 
 // ── Skeleton ─────────────────────────────────────────────────────────────────
 const SkeletonCard = () => (
-  <div className="bg-[#0d1117] border border-white/5 rounded-[2rem] p-6 animate-pulse space-y-5">
+  <div className="bg-[#161b27] border border-white/10 rounded-[2rem] p-6 animate-pulse space-y-5">
     <div className="flex justify-between">
       <div className="w-8 h-8 bg-white/5 rounded-xl" />
       <div className="w-16 h-5 bg-white/5 rounded-lg" />
@@ -363,7 +363,7 @@ const reviewedCourses = courses.filter((c) =>
           displayCourses.map((course) => (
             <div
               key={course._id}
-              className="bg-[#0d1117] border border-white/5 hover:border-purple-500/30 rounded-[2rem] p-6 transition-all group shadow-xl relative overflow-hidden hover:-translate-y-0.5 duration-200"
+              className="bg-[#161b27] border border-white/10 hover:border-purple-500/50 rounded-[2rem] p-6 transition-all group shadow-2xl relative overflow-hidden hover:-translate-y-1.5 duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5),0_0_20px_rgba(168,85,247,0.05)]"
             >
               {/* BG Decor */}
               <div className="absolute -right-6 -top-6 text-purple-500/5 group-hover:text-purple-500/10 transition-colors duration-300">

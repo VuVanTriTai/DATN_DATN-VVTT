@@ -994,7 +994,7 @@ const countBoilerplateDistractors = (q) =>
 // ─────────────────────────────
 // SCORING (IMPROVED)
 // ─────────────────────────────
-
+//QUIZ-HẬU KỲ-chấm điểm
 const scoreQuizItem = (q) => {
   if (!q?.question || !Array.isArray(q.options) || q.options.length !== 4) {
     return 0;
@@ -1003,13 +1003,13 @@ const scoreQuizItem = (q) => {
   let score = 100;
 
   const question = normalizeSpace(q.question);
-
+  //chỉ toàn gạch ngang
   if (QUIZ_PLACEHOLDER_RE.test(question)) return 0;
 
-  // ❌ meta options
+  //đáp án lười biếng
   if (countMetaLikeOptions(q) >= 2) score -= 40;
 
-  // ❌ boilerplate
+  // văn mẫu máy móc
   if (countBoilerplateDistractors(q) >= 1) score -= 30;
 
   // ❌ verdict leak
@@ -1045,7 +1045,7 @@ const scoreQuizItem = (q) => {
 // ─────────────────────────────
 // NORMALIZE ITEM (STRICT)
 // ─────────────────────────────
-
+//QUIZ-HẬU KỲ-gọt câu xấu trước khi chấm
 const normalizeQuizItem = (q) => {
   if (!q?.question || !Array.isArray(q.options)) return null;
 
@@ -1089,7 +1089,7 @@ const normalizeQuizItem = (q) => {
 // ─────────────────────────────
 // DEDUPE (IMPROVED)
 // ─────────────────────────────
-
+//QUIZ-HẬU KỲ-loại trùng
 const dedupeQuizByQuestionStem = (quiz) => {
   const seen = new Set();
 
@@ -1104,11 +1104,10 @@ const dedupeQuizByQuestionStem = (quiz) => {
     return true;
   });
 };
-
 // ─────────────────────────────
 // FILTER + RANK
 // ─────────────────────────────
-
+//QUIZ-HẬU KỲ-lọc và xếp hạng
 const filterAndRankQuiz = (quiz, threshold = 50) => {
   return quiz
     .filter((q) => (q._score ?? scoreQuizItem(q)) >= threshold)
@@ -1118,7 +1117,7 @@ const filterAndRankQuiz = (quiz, threshold = 50) => {
 // ─────────────────────────────
 // BATCH QUALITY CHECK
 // ─────────────────────────────
-
+//QUIZ-HẬU KỲ-kiểm tra chất lượng batch
 const quizBatchLooksLowQuality = (quiz) => {
   if (!Array.isArray(quiz) || quiz.length === 0) return true;
 
@@ -1132,7 +1131,7 @@ const quizBatchLooksLowQuality = (quiz) => {
 // ─────────────────────────────
 // NORMALIZE BATCH
 // ─────────────────────────────
-
+//QUIZ-HẬU KỲ-chuẩn hóa batch
 const normalizeQuizBatch = (rawQuiz) => {
   const mapped = (Array.isArray(rawQuiz) ? rawQuiz : [])
     .map(normalizeQuizItem)
@@ -1142,13 +1141,10 @@ const normalizeQuizBatch = (rawQuiz) => {
 
   return filterAndRankQuiz(deduped);
 };
-
-
-////111111111111111111111
 // ─────────────────────────────────────────────
 // LESSON DATA NORMALIZATION
 // ─────────────────────────────────────────────
-
+//LESSON-HẬU KỲ-kiểm định và đóng gói cuối cùng
 const normalizeLessonData = (
   data,
   fallbackObjective = "",
@@ -1287,6 +1283,7 @@ const normalizeLessonData = (
 // RAG: CHUNK SELECTION
 // ─────────────────────────────────────────────
 
+//RAG-TIỀN KỲ-lấy các chunk đa dạng nhất để điền vào prompt
 const selectDiverseChunks = (
   chunks,
   usedSignatures = [],
@@ -1351,7 +1348,7 @@ const selectDiverseChunks = (
 // ─────────────────────────────────────────────
 // HyDE (Hypothetical Document Embedding)
 // ─────────────────────────────────────────────
-
+//RAG-TIỀN KỲ-tạo tài liệu giả lập cho topic
 const generateHyDE = async (topic, objective) => {
   try {
     const response = await makeGroqPlainRequest({
@@ -1379,7 +1376,7 @@ Chỉ trả về đoạn văn, không giải thích thêm.`,
 };// ─────────────────────────────────────────────
 // QUIZ PROMPT BUILDERS
 // ─────────────────────────────────────────────
-
+//QUIZ-TRUNG KỲ-phương thức tạo prompt ngắn gọn
 const buildConciseQuizPrompt = ({
   context,
   searchTopic,
@@ -1432,7 +1429,7 @@ Chi tra ve JSON:
 // ─────────────────────────────────────────────
 // AI QUIZ GENERATION
 // ─────────────────────────────────────────────
-
+//QUIZ-TRUNG KỲ-Hàm gọi API để sinh câu hỏi
 const generateQuizOnlyGroq = async ({
   context,
   searchTopic,
@@ -1516,7 +1513,7 @@ const generateQuizOnlyGroq = async ({
 // ─────────────────────────────────────────────
 // QUIZ PIPELINE
 // ─────────────────────────────────────────────
-
+//QUIZ-TRUNG KỲ-quy trình vận hành tạo câu hỏi
 const runQuizPipeline = async ({
   existingQuiz = [],
   context,
@@ -1590,15 +1587,11 @@ const runQuizPipeline = async ({
 // ─────────────────────────────────────────────
 
 /**
- * [FIX-6] Phase 1 — nội dung Markdown.
- * THAY ĐỔI so với bản cũ:
- *   - Prompt thêm "FORBIDDEN SECTION LIST" rõ ràng hơn
+ * Phase 1 — nội dung Markdown.
  *   - Sau khi generate, gọi validateScopeCompliance() và log warning
  *   - Nếu overlap > 65% với bài trước → thử regenerate 1 lần với nhiệt độ thấp hơn
  */
-////////////////////////////////////
-
-// ✅ Đặt ở cấp module, trước generateLessonContent
+//LESSON-HẬU KỲ-xử lý rò rỉ prompt
 const stripPromptLeakage = (content) => {
   if (!content || typeof content !== "string") return content;
 
@@ -1627,7 +1620,7 @@ const stripPromptLeakage = (content) => {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ✍️ HÀM PHụ: VIẾT NỘI DUNG BÀI GIẢNG (generateLessonContent) — Phase 1
+// HÀM PHỤ: VIẾT NỘI DUNG BÀI GIẢNG (generateLessonContent) — Phase 1
 //
 // Mục đích: Xây dựng prompt đầy đủ rồi gọi Groq AI viết nội dung Markdown của bài giảng.
 //
@@ -1650,23 +1643,22 @@ const generateLessonContent = async ({
   codeIdentifiers,
   keyFacts,
   previousSummaries, dayNumber, totalDays, item,
-  usedConcepts,   // ← MỚI: concept memory từ các ngày trước
-  contextWeakHint,
+  usedConcepts,   // concept memory từ các ngày trước
+  contextWeakHint,// Gợi ý cảnh báo về độ tin cậy của context
 }) => {
   const budget = getDynamicLessonBudget(totalDays || 7);
-  // Luôn dùng MODEL_SMART: prompt ~7000 tokens + budget output → 8b model (8192 ctx) không đủ
-  const contentModel = MODEL_SMART;
+  // Luôn dùng MODEL_SMART: prompt ~7000 tokens + budget output không đủ
 
   // =========================
   // CONTEXT GUARD (dùng context đã được cắt từ caller, chỉ normalize space)
   // =========================
-  const safeContext = String(context || "").replace(/\s+/g, " ").trim();
-
+  const safeContext = String(context || "").replace(/\s+/g, " ").trim();// Xử lý khoảng trắng
+  // Xử lý tóm tắt bài trước
   const previousBlock = previousSummaries?.length
     ? previousSummaries
       .map((p) => `• Ngày ${p.day}: "${p.title}" — ${p.summary || "(chưa có)"}`)
       .join("\n")
-    : "Chưa có bài nào trước đó.";
+    : "Chưa có bài nào trước đó.";// Tạo danh sách các bài đã học để tránh lặp lại
 
   const coveredSections = item?.coveredSections || [];
 
@@ -1901,6 +1893,7 @@ YÊU CẦU FORMAT:
   // =========================
   // GENERATOR
   // =========================
+  //LESSON-TRUNG KỲ-Hàm viết nội dung và làm sạch.
   const generateContent = async (temperature, extraInstruction = "") => {
     let content = await makeGroqPlainRequest({
       messages: [
@@ -1924,7 +1917,7 @@ YÊU CẦU FORMAT:
       .replace(/^```(?:markdown|md)?\n?/i, "")
       .replace(/\n?```$/i, "")
       .trim();
-
+    // Xóa rò rỉ prompt
     content = stripPromptLeakage(content);
     // remove accidental quiz
     for (const marker of ["### Quiz", "## Quiz", "---\n**Quiz"]) {
@@ -1950,8 +1943,7 @@ YÊU CẦU FORMAT:
 
     return content;
   };
-
-
+  // Thao tác tạo nội dung
   try {
     let content = await generateContent(profile.focus === "practice" ? 0.2 : 0.1);
 
@@ -2087,30 +2079,13 @@ Chỉ trả về JSON, không giải thích thêm.`;
 // ─────────────────────────────────────────────
 // 1. SYLLABUS GENERATION — FIXED [FIX-5]
 // ─────────────────────────────────────────────
-/////////////////////////////////
-////////////////////////////////
-///////////////////////////////
-///////////////////////////////
-////////////////////////////////
-///////////////////////////////
-//////////////////////////////////
-/////////////////////////////////
-////////////////////////////////////
-///////////////////////////////////
-////////////////////////////////////
-///////////////////////////////////
-// ─────────────────────────────────────────────
-// HELPERS (NEW)
-// ─────────────────────────────────────────────
-
+// Hàm tạo tiêu đề thông minh
 const generateSmartTitle = (text, index) => {
   const words = (text || "").split(" ").slice(0, 6).join(" ");
   return words && words.length > 10 ? words : `Chủ đề ${index + 1}`;
 };
-
-// ✅ FIX: Chia block liên tiếp thay vì round-robin.
-// Round-robin cũ: ngày 1 ← section 1,8,15 (không liên quan)
-// Fix mới: ngày 1 ← section 1,2,3 (liên tiếp — hợp lý học thuật)
+//Hàm chia học phần ra từng ngày
+//  Chia block liên tiếp
 const distributeSections = (outline, numDays) => {
   if (!outline.length) return Array.from({ length: numDays }, () => []);
   const result = Array.from({ length: numDays }, () => []);
@@ -2167,7 +2142,7 @@ const buildFallbackPreviewPlan = (text, days) => {
 // ─────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 📚 HÀM 1: SINH KHUNG CHƯƠNG TRÌNH HỌC (generateSyllabus)
+//HÀM 1: SINH KHUNG CHƯƠNG TRÌNH HỌC (generateSyllabus)
 //
 // Mục đích: Dựa vào toàn bộ tài liệu, phân bổ kiến thức thành N ngày học.
 // Ví dụ: Tài liệu SQL có 6 chương, học 7 ngày → AI sẽ gộp/chia đều ra 7 phần.
@@ -2186,9 +2161,9 @@ const buildFallbackPreviewPlan = (text, days) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const generateSyllabus = async (rawText, numDays, learningGoalsInput = null) => {
   const learningGoals = normalizeLearningGoals(learningGoalsInput || {});
-  const textForOutline = mergeBrokenNumberedHeadings(rawText || "");
-  const objectiveSeeds = getObjectiveSeedsFromText(textForOutline, numDays);
-  const outline = extractDocumentOutline(textForOutline);
+  const textForOutline = mergeBrokenNumberedHeadings(rawText || "");//gộp các tiêu đề bị ngắt
+  const objectiveSeeds = getObjectiveSeedsFromText(textForOutline, numDays);//lấy mục tiêu từ tài liệu
+  const outline = extractDocumentOutline(textForOutline);//lấy outline từ tài liệu
 
   const outlineBlock =
     outline.length > 0
@@ -2278,7 +2253,7 @@ ${daySkeleton}
       !objective ||
       objective.length < 20 ||
       /(tong quan|gioi thieu|overview|introduction)/i.test(objective) ||
-      usedObjectives.has(objKey);
+      usedObjectives.has(objKey);//kiểm tra trùng lặp nội dung
 
     if (isGeneric) {
       objective =
@@ -2295,8 +2270,7 @@ ${daySkeleton}
       suffix++;
     }
     usedTitles.add(titleKey);
-
-    // FIX coveredSections
+    //lấy danh sách các phần tài liệu sẽ bao quát trong ngày đó
     let coveredSections = (item.coveredSections || []).filter(Boolean);
     coveredSections = coveredSections.filter((s) => s.length > 3);
 
@@ -2321,7 +2295,7 @@ ${daySkeleton}
     };
   });
 
-  // 🔥 coverage check (improved)
+  // Kiểm tra xem đã bao quát hết outline chưa
   if (outline.length > 0) {
     const coveredSet = new Set(
       syllabus.flatMap((s) => s.coveredSections.map(normalizeVN))
@@ -2377,29 +2351,21 @@ ${daySkeleton}
   return { title: data.title, syllabus };
 };
 // ─────────────────────────────────────────────────────────────────────────────
-// 📦 HÀM 2: CẮT NHỏ TÀI LIỆU & LƯU TRữ VECTOR (processAndStoreDocument)
-//
+//HÀM 2: CẮT NHỏ TÀI LIỆU & LƯU TRỮ VECTOR (processAndStoreDocument)
 // Mục đích: Chuẩn bị dữ liệu cho kỹ thuật RAG (Retrieval-Augmented Generation).
-// Khi AI cần viết bài ngày 3 về SQL Stored Procedure → nó sẽ tìm trong DB
-// xem có chunk nào nói về Stored Procedure không, rồi dùng làm cơ sở viết.
-//
 // Các bước xử lý bên trong:
 //   B1: cleanText()    - Xóa ký tù rác, OCR lỗi, chuẩn hóa unicode
 //   B2: chunkText()    - Cắt tài liệu thành các đoạn nhỏ (~500-1000 ký tự/chunk)
 //   B3: classifyChunks() - Xác định từng chunk thuộc chủ đề gì (SQL, toán, văn...)
 //   B4: generateEmbedding() - Biến mỗi chunk thành mảng số (Vector) đại diện ý nghĩa ngữ nghĩa
 //   B5: Chunk.insertMany() - Lưu tất cả vào MongoDB để dùng khi tìm kiếm sau này
-//
-// Tại sao phải cắt nhỏ?
-//   - Tài liệu dài hàng ngàn từ KHÔNG thể nhét hết vào 1 lần gọi AI (giới hạn context)
-//   - Cắt nhỏ rồi vít riêng phần cần thiết giúp AI tập trung hơn, chính xác hơn
 // ─────────────────────────────────────────────────────────────────────────────
 // Giới hạn tối đa số chunk để nhúng — tài liệu học thuật dài có thể sinh
 // hàng trăm chunk, gây timeout và tốn quá nhiều API call embedding.
 // Strategy: giữ 60% đầu (intro + nội dung chính) + 40% sampled từ phần còn lại.
 const MAX_EMBED_CHUNKS = 150;
 
-// ✅ FIX: Uniform sampling toàn bộ tài liệu — không ưu tiên phần đầu.
+// FIX: Uniform sampling toàn bộ tài liệu — không ưu tiên phần đầu.
 // Tài liệu học thuật: nội dung cốt lõi thường nằm giữa (chương 2-4),
 // không nhất thiết ở phần đầu. 60/40 split bỏ sót nội dung quan trọng.
 const capChunksForLargeDoc = (allChunks) => {
@@ -2408,7 +2374,7 @@ const capChunksForLargeDoc = (allChunks) => {
   console.warn(
     `[Chunk] ⚠️ Tài liệu lớn: ${allChunks.length} chunks → giới hạn còn ${MAX_EMBED_CHUNKS} (uniform sampling).`
   );
-
+  //chia đều số chunk để lấy mẫu
   const step = allChunks.length / MAX_EMBED_CHUNKS;
   const sampled = Array.from({ length: MAX_EMBED_CHUNKS }, (_, i) =>
     allChunks[Math.min(Math.round(i * step), allChunks.length - 1)]
@@ -2585,7 +2551,7 @@ const processAndStoreDocument = async (planId, text) => {
   console.log(`[Embedding] Đã lưu ${docs.length}/${chunks.length} chunks.`);
 };
 // ─────────────────────────────────────────────────────────────────────────────
-// 🧠 HÀM 3: SINH BÀI GIẢNG CHI TIẾT BẰỚC RAG (generateScientificLesson)
+// HÀM 3: SINH BÀI GIẢNG CHI TIẾT BẰỚC RAG (generateScientificLesson)
 //
 // Đây là hàm QUAN TRỌNG NHẤT, điều phối toàn bộ quá trình tạo 1 ngày học.
 //

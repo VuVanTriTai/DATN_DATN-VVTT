@@ -141,7 +141,7 @@ const ConfirmImportModal = ({ course, onConfirm, onCancel, loading }: {
 
 // ── Skeleton Card ─────────────────────────────────────────────────────────────
 const SkeletonCard = () => (
-  <div className="bg-[#0d1117] border border-white/5 rounded-[2.5rem] overflow-hidden animate-pulse">
+  <div className="bg-[#1e293b] border border-slate-800 rounded-[2.5rem] overflow-hidden animate-pulse">
     <div className="aspect-video bg-white/3" />
     <div className="p-5 space-y-3">
       <div className="h-5 bg-white/5 rounded-lg w-3/4" />

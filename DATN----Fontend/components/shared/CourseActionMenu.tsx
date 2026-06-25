@@ -17,6 +17,7 @@ interface CourseActionMenuProps {
     isPublic?: boolean;
     originalPlanId?: string | null;
     progress?: number;
+    sourceType?: string;
   };
   onRefresh: () => void;
 }
@@ -306,13 +307,15 @@ export const CourseActionMenu: React.FC<CourseActionMenuProps> = ({ plan, onRefr
           </button>
 
           {/* Option: Đưa lên Market */}
-          <button
-            onClick={handleOpenMarketModal}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-850 rounded-xl transition-all"
-          >
-            <Globe size={14} className="text-indigo-400" />
-            <span>Đưa lên Market</span>
-          </button>
+          {(plan.sourceType === 'self' || plan.sourceType === 'manual' || plan.sourceType === 'assigned') && (
+            <button
+              onClick={handleOpenMarketModal}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-850 rounded-xl transition-all"
+            >
+              <Globe size={14} className="text-indigo-400" />
+              <span>Đưa lên Market</span>
+            </button>
+          )}
 
           <div className="border-t border-slate-850/60 my-1"></div>
 

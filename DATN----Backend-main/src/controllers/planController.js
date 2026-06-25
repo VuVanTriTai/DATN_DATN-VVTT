@@ -835,6 +835,24 @@ const shareToMarket = async (req, res) => {
       return res.error("Chỉ chủ sở hữu mới có quyền đưa khóa học lên Market.", 403);
     }
 
+    // 1b. CHỈ cho phép xuất bản khóa học tự biên soạn (self hoặc manual), hoặc lộ trình assigned gốc tự biên soạn
+    if (!["self", "manual"].includes(originalPlan.sourceType)) {
+      if (originalPlan.sourceType === "assigned" && originalPlan.originalPlanId) {
+        const rootPlan = await Plan.findById(originalPlan.originalPlanId);
+        if (!rootPlan || !["self", "manual"].includes(rootPlan.sourceType)) {
+          return res.error(
+            "Bạn chỉ có thể xuất bản lộ trình tự biên soạn hoặc lộ trình tự biên soạn được giáo viên hướng dẫn.",
+            400
+          );
+        }
+      } else {
+        return res.error(
+          "Chỉ được phép xuất bản lộ trình do bạn tự biên soạn (không được xuất bản lại lộ trình tải từ Market hoặc được người khác chia sẻ).",
+          400
+        );
+      }
+    }
+
     // 2. Chống đăng trùng: Kiểm tra xem đã có bản công khai nào từ bản gốc này chưa
     // Nếu có rồi thì cập nhật bản đó thay vì tạo thêm clone rác
     let publicClone = await Plan.findOne({ 
@@ -845,13 +863,37 @@ const shareToMarket = async (req, res) => {
     const normalizedTags = tags.map((t) => String(t).toLowerCase().trim());
 
     if (publicClone) {
-      // Nếu đã có bản trên Market, ta cập nhật thông tin Meta
+      // Nếu đã có bản trên Market, cập nhật đầy đủ thông tin (Title, Description, Meta) và đồng bộ bài học
+      publicClone.title = originalPlan.title;
+      publicClone.description = originalPlan.description;
       publicClone.categories = categories;
       publicClone.level = level;
       publicClone.tags = tags;
       publicClone.normalizedTags = normalizedTags;
       await publicClone.save();
-      return res.success(publicClone, "Đã cập nhật thông tin khóa học trên Market.");
+
+      // Đồng bộ toàn bộ bài học (Lessons) mới sang bản công khai
+      await Lesson.deleteMany({ planId: publicClone._id });
+      const lessons = await Lesson.find({ planId: originalPlanId, isDeleted: false });
+      if (lessons.length > 0) {
+        const publicLessons = lessons.map(lesson => {
+          const lData = lesson.toObject();
+          delete lData._id;
+          lData.planId = publicClone._id;
+          // Bản công khai thì merge nháp của GV (nếu có) vào chính thức luôn để người mua nhận được bản tốt nhất
+          if (lData.hasDraft && lData.instructorDraft) {
+              lData.title = lData.instructorDraft.title || lData.title;
+              lData.content = lData.instructorDraft.content || lData.content;
+              lData.quizPool = lData.instructorDraft.quizPool || lData.quizPool;
+          }
+          lData.instructorDraft = {};
+          lData.hasDraft = false;
+          return lData;
+        });
+        await Lesson.insertMany(publicLessons);
+      }
+
+      return res.success(publicClone, "Đã cập nhật thông tin và bài học khóa học trên Market.");
     }
 
     // 3. Nếu chưa có -> Tạo bản CLONE công khai

@@ -9,18 +9,14 @@
 //            3. searchRelevantChunks 1 lần duy nhất
 //            4. semanticDiffLesson 1 lần duy nhất
 //          Giảm từ O(n) LLM calls xuống O(1) per lesson slot.
+//Jaccard Similarity là một cách đo độ giống nhau giữa hai tập hợp (set).
+//Công thức:
+
+//J(A,B)=
+//∣A∪B∣
+//∣A∩B∣
 //
-//  [FIX-2] _extractKeywords xử lý đúng tiếng Việt:
-//          Thêm bước replace "đ"→"d", "Đ"→"D" trước normalize NFD.
-//          Không còn bỏ sót ký tự đặc biệt → guard hoạt động đúng.
 //
-//  [FIX-3] Context chunk cache per (planId, embeddingKey) trong bộ nhớ runtime.
-//          Cùng một plan + query embedding không query MongoDB lại.
-//          Cache tự giải phóng khi process restart (không leak).
-//
-//  [FIX-4] Tách _pickBestCandidate() — single-pass qua ownRaw/publicRaw,
-//          trả về candidate đầu tiên vượt threshold + guards mà không fetch
-//          Lesson document cho từng candidate bị reject.
 // ─────────────────────────────────────────────────────────────────────────────
 
 "use strict";
@@ -143,6 +139,7 @@ const _keywordOverlap = (textA, textB) => {
   let shared = 0;
   for (const w of kwA) { if (kwB.has(w)) shared++; }
   const union = kwA.size + kwB.size - shared;
+
   return shared / union;
 };
 
@@ -244,7 +241,7 @@ QUY TẮC CHỌN ACTION:
 // ─────────────────────────────────────────────
 // PUBLIC API — indexLesson (không thay đổi)
 // ─────────────────────────────────────────────
-
+//indexer bài học
 const indexLesson = async (lesson, plan) => {
   if (lesson.reusedFrom) return;
 
