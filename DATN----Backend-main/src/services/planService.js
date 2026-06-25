@@ -1647,6 +1647,7 @@ const generateLessonContent = async ({
   contextWeakHint,// Gợi ý cảnh báo về độ tin cậy của context
 }) => {
   const budget = getDynamicLessonBudget(totalDays || 7);
+  const contentModel = MODEL_SMART;
   // Luôn dùng MODEL_SMART: prompt ~7000 tokens + budget output không đủ
 
   // =========================
